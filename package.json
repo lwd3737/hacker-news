@@ -1,0 +1,13 @@
+{
+	"name": "custom-hacker-news",
+	"version": "1.0.0",
+	"main": "index.js",
+	"author": "lwd3737",
+	"license": "MIT",
+	"scripts": {
+		"start": "yarn parcel index.html"
+	},
+	"devDependencies": {
+		"parcel": "^2.2.1"
+	}
+}

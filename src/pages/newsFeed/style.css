@@ -1,0 +1,7 @@
+#news-feeds {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	gap: 60px 20px;
+	margin-bottom: 40px;
+}

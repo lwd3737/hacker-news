@@ -1,0 +1,21 @@
+#comments {
+	margin-top: 60px;
+}
+
+.comment {
+	margin: 40px 0;
+}
+
+.comment .info {
+	display: flex;
+	gap: 10px;
+}
+
+.comment .info .time-ago {
+	line-height: 1.7;
+}
+
+.comment .content {
+	min-height: fit-content !important;
+	padding-left: 20px;
+}

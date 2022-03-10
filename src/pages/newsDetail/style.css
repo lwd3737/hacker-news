@@ -1,0 +1,12 @@
+.news-detail .head .user {
+	margin-bottom: 10px;
+}
+
+.news-detail .title {
+	margin-bottom: 50px;
+}
+
+.news-detail .bottom {
+	display: flex;
+	gap: 20px;
+}

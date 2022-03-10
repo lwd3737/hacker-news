@@ -1,0 +1,12 @@
+:root {
+	--layout-padding-horizontal: 25px;
+}
+
+* {
+	box-sizing: border-box;
+}
+
+body {
+	height: 100%;
+	margin: 0;
+}
