@@ -87,7 +87,7 @@ export default class NewsDetailPage extends View {
 			user,
 			points,
 			time_ago,
-			content: content.length === 0 ? "내용이 없습니다" : content,
+			content: content?.length === 0 ? "내용이 없습니다" : content,
 			comments_count,
 			current_page: this.store.currentPage,
 		});
@@ -96,7 +96,7 @@ export default class NewsDetailPage extends View {
 			comments,
 		};
 
-		await super.render(null, null, { async: true, clearTemplateVars: false });
+		await super.render({ options: { async: true, clearTemplateVars: false } });
 
 		views.comments.setContainer("comments");
 		views.comments.render();

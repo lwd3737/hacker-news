@@ -1,4 +1,4 @@
-import { Params, Query, State } from "../types";
+import { Params, Query, State, TemplateVars } from "../types";
 
 export default abstract class View {
 	static CONTAINER_ERROR = "container가 존재하지 않아 UI를 진행할 수 없습니다";
@@ -12,7 +12,6 @@ export default abstract class View {
 		this.originalTemplate = template;
 		this.renderTemplate = template;
 		this._state = null;
-
 		this.container = null;
 
 		if (containerId) {
@@ -20,19 +19,31 @@ export default abstract class View {
 		}
 	}
 
-	private resetTemplate = (): void => {
-		this.renderTemplate = this.originalTemplate;
-	};
-
 	public get template(): string {
 		return this.renderTemplate;
+	}
+
+	public get state(): State | null {
+		return this._state;
+	}
+
+	public set state(state: State | null) {
+		if (state) {
+			this._state = { ...this._state, ...state };
+		} else {
+			this._state = null;
+		}
 	}
 
 	public setContainer(containerId: string): void {
 		this.container = document.getElementById(containerId);
 	}
 
-	public setTemplateVars = (vars: { [key: string]: any }): string => {
+	private resetTemplate = (): void => {
+		this.renderTemplate = this.originalTemplate;
+	};
+
+	public setTemplateVars = (vars: TemplateVars): string => {
 		for (const key in vars) {
 			this.renderTemplate = this.renderTemplate.replaceAll(
 				`{{__${key}__}}`,
@@ -46,7 +57,7 @@ export default abstract class View {
 	public clearTemplateVars = (): void => {
 		const varPattern = /{{__(\w+)__}}/g;
 
-		this.renderTemplate = this.renderTemplate.replace(varPattern, "");
+		this.renderTemplate = this.renderTemplate.replaceAll(varPattern, "");
 	};
 
 	public mergeTemplates = (views: { [key: string]: View }): string => {
@@ -62,18 +73,6 @@ export default abstract class View {
 
 		return this.template;
 	};
-
-	public get state(): State | null {
-		return this._state;
-	}
-
-	public set state(state: State | null) {
-		if (state) {
-			this._state = { ...this._state, ...state };
-		} else {
-			this._state = null;
-		}
-	}
 
 	public appendToContainer = (
 		containerId?: string | null,
@@ -112,57 +111,65 @@ export default abstract class View {
 		}
 	};
 
-	public addEvent(
-		selector: string,
-		eventName: string,
-		handler: (e: Event) => void,
-	): void {
-		const els = selector.split(" ");
+	public addEvent({
+		selector,
+		eventName,
+		handler,
+	}: {
+		selector?: string;
+		eventName: string;
+		handler: (e: Event, ...args: any[]) => void;
+	}): void {
+		if (selector) {
+			const els = selector?.split(" ");
 
-		if (els.length > 1) {
-			const [ancestorSelector, childSelector] = els;
-			const ancestorEl = document.querySelector(ancestorSelector);
+			if (els.length > 1) {
+				const [ancestorSelector, childSelector] = els;
+				const ancestorEl = document.querySelector(ancestorSelector);
 
-			ancestorEl?.addEventListener(eventName, (e) => {
-				const target = e.target as HTMLElement;
-				const collection = document.querySelectorAll(childSelector);
+				ancestorEl?.addEventListener(eventName, (e) => {
+					const target = e.target as HTMLElement;
+					const childCollection = document.querySelectorAll(childSelector);
 
-				const targetEl = Array.from(collection).find((child) => {
-					if (target === child) return true;
-					if (target.closest(".page") === child) return true;
+					const childEl = Array.from(childCollection).find((child) => {
+						if (target === child) return true;
+						if (target.closest(".page") === child) return true;
 
-					return false;
+						return false;
+					});
+
+					handler(e, childEl);
 				});
 
-				handler.call(targetEl, e);
-			});
+				return;
+			}
 
-			return;
+			const el = document.querySelector(selector);
+
+			el?.addEventListener(eventName, (e) => handler(e));
+		} else {
+			document.addEventListener(eventName, handler);
 		}
-
-		const el = document.querySelector(selector);
-
-		el?.addEventListener(eventName, (e) => handler(e));
 	}
 
-	public render(
-		params?: Params | null,
-		query?: Query | null,
-		options?: { async?: boolean; clearTemplateVars?: boolean },
-	): void | Promise<void> {
+	public render(args?: {
+		params?: Params | null;
+		query?: Query | null;
+		options?: { async?: boolean; clearTemplateVars?: boolean };
+	}): void | Promise<void> {
 		if (!this.container) {
 			throw View.CONTAINER_ERROR;
 		}
 
-		if (params) {
-			this.setTemplateVars(params);
+		if (args?.params) {
+			this.setTemplateVars(args.params);
 		}
 
-		if (query) {
-			this.setTemplateVars(query);
+		if (args?.query) {
+			this.setTemplateVars(args.query);
 		}
 
-		const { async, clearTemplateVars } = options ?? {};
+		const { async, clearTemplateVars } = args?.options ?? {};
 
 		if (clearTemplateVars === undefined || clearTemplateVars === true) {
 			this.clearTemplateVars();

@@ -1,5 +1,9 @@
 import View from "../core/view";
 
+export interface AnyObject {
+	[key: string]: any;
+}
+
 export interface Params {
 	[key: string]: string | number | null;
 }
@@ -8,9 +12,9 @@ export interface Query {
 	[key: string]: string | number;
 }
 
-export interface State {
-	[key: string]: any;
-}
+export interface State extends AnyObject {}
+
+export interface TemplateVars extends AnyObject {}
 
 export interface RouteInfo {
 	path: string;

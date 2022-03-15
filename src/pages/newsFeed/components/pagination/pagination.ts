@@ -1,5 +1,6 @@
 import { ROUTE_PATHS } from "../../../../config";
 import View from "../../../../core/view";
+import Store from "../../../../store";
 import "./style.css";
 
 const PAGINATION_TEMPLATE = `
@@ -14,14 +15,16 @@ const PAGE_TEMPLATE = `
 `;
 
 export default class Pagination extends View {
-	private totalPage: number;
-	private currentPage: number;
+	private store: Store;
+	private pageView: Page;
 
-	constructor(containerId: string, totalPage: number, currentPage: number) {
+	constructor(containerId: string, store: Store) {
 		super(PAGINATION_TEMPLATE, containerId);
 
-		this.totalPage = totalPage;
-		this.currentPage = currentPage;
+		this.store = store;
+		this.pageView = new Page("pagination");
+
+		this.addEvent({ eventName: "hashchange", handler: this.render });
 	}
 
 	static paginate(page: number): void {
@@ -29,18 +32,16 @@ export default class Pagination extends View {
 	}
 
 	public render(): void {
-		const pageView = new Page("pagination");
+		for (let page = 1; page <= this.store.totalPage; page++) {
+			const t = this.pageView.setTemplateVars({ page });
 
-		for (let page = 1; page <= this.totalPage; page++) {
-			const t = pageView.setTemplateVars({ page });
-
-			if (page === this.currentPage) {
-				pageView.setTemplateVars({
+			if (page === this.store.currentPage) {
+				this.pageView.setTemplateVars({
 					current_page: "current-page",
 				});
 			}
 
-			pageView.appendToContainer(null, { clearTemplateVars: true });
+			this.pageView.appendToContainer(null, { clearTemplateVars: true });
 		}
 	}
 }

@@ -69,7 +69,7 @@ export default class Comments extends View {
 	}
 
 	public async render(): Promise<void> {
-		await super.render(null, null, { async: true });
+		await super.render({ options: { async: true } });
 
 		const comments = this.state?.comments as NewsComment[];
 

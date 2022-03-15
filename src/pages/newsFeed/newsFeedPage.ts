@@ -16,6 +16,8 @@ const NEWS_FEED_TEMPLATE = `
 export default class NewsFeedPage extends View {
 	private api: NewsFeedApi;
 	private store: Store;
+	private paginationView: Pagination;
+	private newsFeedCardView: NewsFeedCard;
 
 	constructor(containerId: string, store: Store) {
 		const layout = new Layout(containerId);
@@ -24,33 +26,29 @@ export default class NewsFeedPage extends View {
 		});
 
 		super(template, containerId);
+		super.render();
 
 		this.api = new NewsFeedApi(NEWS_FEED_URL);
 		this.store = store;
+		this.paginationView = new Pagination("main", store);
+		this.newsFeedCardView = new NewsFeedCard("news-feeds");
 	}
 
-	public async render(_, query: Query): Promise<void> {
+	public async render(query: Query): Promise<void> {
 		if (query?.page) {
 			this.store.currentPage = Number(query.page);
 		}
 
-		await super.render(null, null, { async: true });
-
 		if (!this.store.hasFeeds) {
 			this.store.setFeeds(await this.api.getData());
 		}
+
 		const feeds = this.store.getFeedsOfCurrentPage();
-		const newsFeedCardView = new NewsFeedCard("news-feeds");
-		const paginationView = new Pagination(
-			"main",
-			this.store.totalPage,
-			this.store.currentPage,
-		);
 
 		feeds.forEach((feed) => {
 			const { id, title, user, time_ago, comments_count, points } = feed;
 
-			newsFeedCardView.setTemplateVars({
+			this.newsFeedCardView.setTemplateVars({
 				id,
 				title,
 				user,
@@ -59,19 +57,27 @@ export default class NewsFeedPage extends View {
 				points,
 			});
 
-			newsFeedCardView.appendToContainer(null, { clearTemplateVars: true });
+			console.log("card: ", this.newsFeedCardView);
+
+			this.newsFeedCardView.appendToContainer(null, {
+				clearTemplateVars: true,
+			});
 		});
 
-		await paginationView.appendToContainer(null, { async: true });
+		await this.paginationView.appendToContainer(null, { async: true });
 
-		paginationView.render();
-		paginationView.addEvent("#pagination .page", "click", function (e) {
-			const targetEl = this as HTMLElement;
-			const page = Number(targetEl.dataset.page);
+		this.paginationView.render();
+		this.paginationView.addEvent({
+			selector: "#pagination .page",
+			eventName: "click",
+			handler: function (e, target) {
+				const targetEl = target as HTMLElement;
+				const page = Number(targetEl.dataset.page);
 
-			if (typeof page === "number") {
-				Pagination.paginate(page);
-			}
+				if (typeof page === "number") {
+					Pagination.paginate(page);
+				}
+			},
 		});
 	}
 }
