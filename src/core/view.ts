@@ -1,7 +1,9 @@
 import { Params, Query, State, TemplateVars } from "../types";
 
 export default abstract class View {
-	static CONTAINER_ERROR = "container가 존재하지 않아 UI를 진행할 수 없습니다";
+	static containerError(): string {
+		throw `container가 존재하지 않아 UI를 진행할 수 없습니다`;
+	}
 
 	private container: HTMLElement | null;
 	private originalTemplate: string;
@@ -81,6 +83,10 @@ export default abstract class View {
 			clearTemplateVars?: boolean;
 		},
 	): void | Promise<void> => {
+		if (!containerId && !this.container) {
+			throw View.containerError();
+		}
+
 		const fragment = document.createElement("div");
 
 		if (options?.clearTemplateVars) {
@@ -94,10 +100,6 @@ export default abstract class View {
 			this.container!.appendChild(fragment.firstElementChild!);
 		} else if (this.container) {
 			this.container.appendChild(fragment.firstElementChild!);
-		}
-
-		if (!this.container) {
-			throw View.CONTAINER_ERROR;
 		}
 
 		this.resetTemplate();
@@ -153,29 +155,38 @@ export default abstract class View {
 	}
 
 	public render(args?: {
+		containerId?: string;
 		params?: Params | null;
 		query?: Query | null;
 		options?: { async?: boolean; clearTemplateVars?: boolean };
 	}): void | Promise<void> {
-		if (!this.container) {
-			throw View.CONTAINER_ERROR;
+		const { containerId, params, query, options } = args ?? {};
+
+		if (!containerId && !this.container) {
+			View.containerError();
+			return;
+		}
+		if (params) {
+			this.setTemplateVars(params);
+		}
+		if (query) {
+			this.setTemplateVars(query);
 		}
 
-		if (args?.params) {
-			this.setTemplateVars(args.params);
-		}
-
-		if (args?.query) {
-			this.setTemplateVars(args.query);
-		}
-
-		const { async, clearTemplateVars } = args?.options ?? {};
+		const { async, clearTemplateVars } = options ?? {};
 
 		if (clearTemplateVars === undefined || clearTemplateVars === true) {
 			this.clearTemplateVars();
 		}
 
-		this.container.innerHTML = this.renderTemplate;
+		const container = containerId
+			? document.getElementById(containerId)
+			: this.container;
+
+		if (container) {
+			container.innerHTML = this.renderTemplate;
+		}
+
 		this.resetTemplate();
 
 		if (async) {

@@ -114,7 +114,7 @@ export default class Router {
 		this.routeTable.push({ path, page, params, pattern, defaultQuery });
 	}
 
-	public route(): void {
+	public async route(): Promise<void> {
 		const [routePath, queryStr] = location.hash.slice(1).split("?");
 		let query = queryStr ? Router.foramtQuery(queryStr) : null;
 
@@ -154,7 +154,7 @@ export default class Router {
 					if (added) return;
 				}
 
-				routeInfo.page.render(params, query);
+				await routeInfo.page.render(params, query);
 
 				break;
 			}

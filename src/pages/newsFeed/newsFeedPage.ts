@@ -26,15 +26,16 @@ export default class NewsFeedPage extends View {
 		});
 
 		super(template, containerId);
-		super.render();
 
 		this.api = new NewsFeedApi(NEWS_FEED_URL);
 		this.store = store;
-		this.paginationView = new Pagination("main", store);
-		this.newsFeedCardView = new NewsFeedCard("news-feeds");
+		this.paginationView = new Pagination(undefined, store);
+		this.newsFeedCardView = new NewsFeedCard();
 	}
 
 	public async render(query: Query): Promise<void> {
+		await super.render({ options: { async: true } });
+
 		if (query?.page) {
 			this.store.currentPage = Number(query.page);
 		}
@@ -57,27 +58,11 @@ export default class NewsFeedPage extends View {
 				points,
 			});
 
-			console.log("card: ", this.newsFeedCardView);
-
-			this.newsFeedCardView.appendToContainer(null, {
+			this.newsFeedCardView.appendToContainer("news-feeds", {
 				clearTemplateVars: true,
 			});
 		});
 
-		await this.paginationView.appendToContainer(null, { async: true });
-
-		this.paginationView.render();
-		this.paginationView.addEvent({
-			selector: "#pagination .page",
-			eventName: "click",
-			handler: function (e, target) {
-				const targetEl = target as HTMLElement;
-				const page = Number(targetEl.dataset.page);
-
-				if (typeof page === "number") {
-					Pagination.paginate(page);
-				}
-			},
-		});
+		await this.paginationView.render({ containerId: "main" });
 	}
 }
