@@ -58,8 +58,11 @@ export default class NewsFeedPage extends View {
 				points,
 			});
 
-			this.newsFeedCardView.appendToContainer("news-feeds", {
-				clearTemplateVars: true,
+			this.newsFeedCardView.appendToContainer({
+				containerId: "news-feeds",
+				options: {
+					clearTemplateVars: true,
+				},
 			});
 		});
 

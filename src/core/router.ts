@@ -1,3 +1,4 @@
+import { ROUTE_PATHS } from "../config";
 import { Params, Query, RouteInfo } from "../types";
 import View from "./view";
 
@@ -16,49 +17,29 @@ export default class Router {
 
 	static foramtQuery(query: string): Query {
 		const searchParams = new URLSearchParams(query);
-		let queryObj: Query = {};
+		const queryObj: Query = {};
 
-		for (const [key, value] of searchParams) {
+		searchParams.forEach((value, key) => {
 			queryObj[key] = value;
-		}
+		});
 
 		return queryObj;
 	}
 
-	static addDefaultQueryToURL(query: Query, defaultQuery: Query): boolean {
-		const queryCount = Object.keys(defaultQuery).length;
+	static parseURL(): { path: string; query: Query | null } {
+		const [path, queryStr] = location.hash.slice(1).split("?");
+		let query = queryStr ? Router.foramtQuery(queryStr) : null;
 
-		if (queryCount === 1) {
-			const queryName = Object.keys(defaultQuery)[0];
-
-			if (query && queryName in query) {
-				return false;
-			}
-
-			if (!query) {
-				query = {
-					[queryName]: defaultQuery[queryName],
-				};
-			} else if (!(queryName in query)) {
-				query[queryName] = defaultQuery[queryName];
-			}
-
-			const queryStr =
-				"?" +
-				Object.keys(query)
-					.map((queryName) => `${queryName}=${query[queryName]}`)
-					.join("&");
-
-			location.hash += queryStr;
-
-			return true;
-		}
+		return {
+			path,
+			query,
+		};
 	}
 
 	private defaultRoute: {
 		page: View | null;
 		defaultQuery?: Query;
-	};
+	} | null;
 	private routeTable: RouteInfo[];
 
 	constructor() {
@@ -66,6 +47,31 @@ export default class Router {
 
 		this.defaultRoute = null;
 		this.routeTable = [];
+	}
+
+	private addDefaultQueryToURL(path?: string): boolean {
+		if (!this.defaultRoute || !this.defaultRoute.defaultQuery) return false;
+
+		const defaultQuery = this.defaultRoute.defaultQuery;
+		const { query } = Router.parseURL();
+		const newQuery: Query = {
+			...defaultQuery,
+			...query,
+		};
+		const queryTuple = Object.keys(newQuery).map((queryName) => [
+			queryName,
+			newQuery[queryName],
+		]);
+		const queryStr = queryTuple.reduce((queryStr, [name, value], index) => {
+			const isLastIndex = index === queryTuple.length - 1;
+			const newQueryStr = `${queryStr}${name}=${value}`;
+
+			if (isLastIndex) return newQueryStr;
+			return `${newQueryStr}&`;
+		}, "?");
+
+		window.location.hash = path ? path + queryStr : queryStr;
+		return true;
 	}
 
 	public setDefaultRoute(page: View, defaultQuery?: Query): void {
@@ -114,50 +120,32 @@ export default class Router {
 		this.routeTable.push({ path, page, params, pattern, defaultQuery });
 	}
 
+	public redirectDefault(): void {}
+
 	public async route(): Promise<void> {
-		const [routePath, queryStr] = location.hash.slice(1).split("?");
-		let query = queryStr ? Router.foramtQuery(queryStr) : null;
+		const { path, query } = Router.parseURL();
 
-		if (routePath === "" && this.defaultRoute) {
-			if (this.defaultRoute.defaultQuery) {
-				const added = Router.addDefaultQueryToURL(
-					query,
-					this.defaultRoute.defaultQuery,
-				);
-
-				if (added) return;
-			}
-
-			this.defaultRoute.page.render();
-			return;
+		if ((path === "" || path === ROUTE_PATHS.newsFeeds) && this.defaultRoute) {
+			this.addDefaultQueryToURL(ROUTE_PATHS.newsFeeds);
 		}
 
 		for (const routeInfo of this.routeTable) {
-			const matched = routePath.match(routeInfo.pattern);
+			const matched = path.match(routeInfo.pattern);
+			if (!matched) continue;
 
-			if (matched) {
-				matched.forEach((value, i) => {
-					if (i === 0) return;
+			console.log(matched);
+			matched.forEach((value, i) => {
+				if (i === 0) return;
 
-					const param = routeInfo.params[i - 1];
-					param.value = value;
-				});
+				const param = routeInfo.params[i - 1];
+				param.value = value;
+			});
 
-				const params = Router.formatParams(routeInfo.params);
+			const params = Router.formatParams(routeInfo.params);
 
-				if (routeInfo.defaultQuery) {
-					const added = Router.addDefaultQueryToURL(
-						query,
-						routeInfo.defaultQuery,
-					);
+			await routeInfo.page.render({ params, query });
 
-					if (added) return;
-				}
-
-				await routeInfo.page.render(params, query);
-
-				break;
-			}
+			break;
 		}
 	}
 }

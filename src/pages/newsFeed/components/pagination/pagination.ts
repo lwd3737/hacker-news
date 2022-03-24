@@ -39,12 +39,11 @@ export default class Pagination extends View {
 	}
 
 	public onPageClick(e: Event, target: HTMLElement): void {
-		console.log("t: ", target);
-		const page = Number(target.dataset.page);
+		const page = Number(target?.dataset.page);
+		console.log("p: ", page);
 
 		if (page) {
 			this.paginate(page);
-			//this.pageView.changePage(page);
 		}
 	}
 
@@ -53,7 +52,7 @@ export default class Pagination extends View {
 	}: {
 		containerId?: string;
 	}): Promise<void> {
-		await this.appendToContainer(containerId, { async: true });
+		await this.appendToContainer({ containerId, options: { async: true } });
 
 		for (let page = 1; page <= this.store.totalPage; page++) {
 			const t = this.pageView.setTemplateVars({ page });
@@ -64,8 +63,11 @@ export default class Pagination extends View {
 				});
 			}
 
-			this.pageView.appendToContainer("pagination", {
-				clearTemplateVars: true,
+			this.pageView.appendToContainer({
+				containerId: "pagination",
+				options: {
+					clearTemplateVars: true,
+				},
 			});
 		}
 	}
@@ -77,7 +79,6 @@ class Page extends View {
 	}
 
 	public changePage(page: number): void {
-		console.log("p: ", page);
 		const pageCollection = document.getElementsByClassName("page");
 		const currentPageEl = Array.from(pageCollection).find((page) => {
 			return page.classList.contains("current-page");

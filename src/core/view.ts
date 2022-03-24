@@ -66,23 +66,23 @@ export default abstract class View {
 		for (const key in views) {
 			if (!views[key]) continue;
 
-			const template = views[key].template;
-
 			this.setTemplateVars({
-				[key]: template,
+				[key]: views[key].template,
 			});
 		}
 
 		return this.template;
 	};
 
-	public appendToContainer = (
-		containerId?: string | null,
+	public appendToContainer = (args?: {
+		containerId?: string | null;
 		options?: {
 			async?: boolean;
 			clearTemplateVars?: boolean;
-		},
-	): void | Promise<void> => {
+		};
+	}): void | Promise<void> => {
+		const { containerId, options } = args ?? {};
+
 		if (!containerId && !this.container) {
 			throw View.containerError();
 		}
@@ -166,6 +166,7 @@ export default abstract class View {
 			View.containerError();
 			return;
 		}
+
 		if (params) {
 			this.setTemplateVars(params);
 		}
@@ -183,9 +184,12 @@ export default abstract class View {
 			? document.getElementById(containerId)
 			: this.container;
 
-		if (container) {
-			container.innerHTML = this.renderTemplate;
+		if (!container) {
+			View.containerError();
+			return;
 		}
+
+		container.innerHTML = this.renderTemplate;
 
 		this.resetTemplate();
 
